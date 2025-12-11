@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浇水应用</title>
+    <style>
+        /* 基础重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f4f8;
+            overflow: hidden;
+        }
+
+        /* --- 1. 加载屏幕样式 (动态浇水) --- */
+        #loader-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .watering-can {
+            font-size: 80px;
+            /* 初始状态稍微倾斜 */
+            transform-origin: center;
+            animation: pour-action 1.5s infinite ease-in-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        .water-drops {
+            position: absolute;
+            top: 55%; /* 在水壶嘴下方 */
+            left: 50%; /* 调整位置以匹配水壶嘴 */
+            transform: translateX(-30px); /* 微调水平位置 */
+            z-index: 1;
+        }
+
+        .drop {
+            width: 8px;
+            height: 8px;
+            background-color: #3498db;
+            border-radius: 50%;
+            position: absolute;
+            opacity: 0;
+            animation: drop-fall 1.5s infinite linear;
+        }
+
+        /* 制造水滴的时间差，看起来像连续的水流 */
+        .drop:nth-child(1) { animation-delay: 0.3s; }
+        .drop:nth-child(2) { animation-delay: 0.6s; }
+        .drop:nth-child(3) { animation-delay: 0.9s; }
+
+        /* 动画定义 */
+        @keyframes pour-action {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-30deg); } /* 向左倾倒 */
+        }
+
+        @keyframes drop-fall {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+            30% {
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                top: 60px; /* 下落距离 */
+                opacity: 0;
+            }
+        }
+
+        /* --- 2. 主页面内容样式 --- */
+        #main-content {
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s ease;
+            display: none; /* 初始隐藏 */
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .btn-water {
+            background-color: #5D7CA6; /* 灰蓝色 */
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            border-radius: 8px; /* 轻微圆角，保持长方形感觉 */
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .btn-water:hover {
+            background-color: #4b668a;
+        }
+
+        .btn-water:active {
+            transform: scale(0.98);
+        }
+
+        /* --- 3. 自定义弹窗样式 --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-text {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close-btn {
+            padding: 8px 20px;
+            background-color: #eee;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #555;
+        }
+        
+        .modal-close-btn:hover {
+            background-color: #ddd;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader-screen">
+        <div style="position:relative;">
+            <div class="watering-can">🫖</div> <div class="water-drops">
+                <div class="drop"></div>
+                <div class="drop"></div>
+                <div class="drop"></div>
+            </div>
+        </div>
+        <p style="margin-top: 20px; color: #888;">正在准备水源...</p>
+    </div>
+
+    <div id="main-content">
+        <h1>请浇水</h1>
+        <button class="btn-water" id="waterBtn">浇水</button>
+    </div>
+
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-text">✅ 浇水成功</div>
+            <button class="modal-close-btn" onclick="closeModal()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载逻辑
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader-screen');
+            const content = document.getElementById('main-content');
+
+            // 模拟加载时间：2.5秒后隐藏加载层，显示内容
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                
+                // 等待淡出动画完成后移除元素并显示主内容
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    content.style.display = 'block';
+                    // 强制重绘后添加透明度动画，实现淡入
+                    requestAnimationFrame(() => {
+                        content.style.opacity = '1';
+                    });
+                }, 500); 
+            }, 2500);
+        });
+
+        // 按钮点击逻辑
+        const waterBtn = document.getElementById('waterBtn');
+        const modal = document.getElementById('successModal');
+
+        waterBtn.addEventListener('click', () => {
+            // 显示弹窗
+            modal.classList.add('active');
+        });
+
+        // 关闭弹窗逻辑
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        // 点击背景也可以关闭弹窗
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
